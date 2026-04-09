@@ -26,7 +26,9 @@ That's it. Your app can acknowledge clicks, inputs, and heavy UI updates sooner 
 
 Watch the package in action:
 
-- [Demo video (MP4)](./20260409-0734-41.8367767.mp4)
+![SnapINP demo](./demo.gif)
+
+- [Open demo GIF](./demo.gif)
 
 ## Why Use It?
 
