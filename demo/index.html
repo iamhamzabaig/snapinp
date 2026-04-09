@@ -1,0 +1,576 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>SnapINP Demo - First Feedback vs Blocking</title>
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    :root {
+      --bg: #09111f;
+      --panel: #101b31;
+      --panel-2: #152440;
+      --line: #223455;
+      --text: #e7eefc;
+      --muted: #8ea3c8;
+      --accent: #4cc9f0;
+      --good: #22c55e;
+      --bad: #ef4444;
+      --warn: #f59e0b;
+    }
+
+    body {
+      min-height: 100vh;
+      background:
+        radial-gradient(circle at top, rgba(76, 201, 240, 0.16), transparent 28%),
+        linear-gradient(180deg, #0b1426, var(--bg));
+      color: var(--text);
+      font-family: "Segoe UI", Tahoma, sans-serif;
+    }
+
+    .header {
+      padding: 2.5rem 1rem 1.2rem;
+      text-align: center;
+      border-bottom: 1px solid var(--line);
+    }
+
+    .header h1 {
+      font-size: 2.6rem;
+      color: #60a5fa;
+      margin-bottom: 0.8rem;
+    }
+
+    .header p {
+      max-width: 860px;
+      margin: 0 auto;
+      color: var(--muted);
+      line-height: 1.6;
+      font-size: 1rem;
+    }
+
+    .controls {
+      display: flex;
+      justify-content: center;
+      padding: 1.1rem 1rem;
+      border-bottom: 1px solid rgba(34, 52, 85, 0.7);
+    }
+
+    .toggle-wrap {
+      display: flex;
+      align-items: center;
+      gap: 0.75rem;
+      color: var(--muted);
+    }
+
+    .toggle {
+      position: relative;
+      width: 48px;
+      height: 26px;
+      background: #334155;
+      border-radius: 13px;
+      cursor: pointer;
+      transition: background 0.2s;
+    }
+
+    .toggle.active { background: var(--accent); }
+
+    .toggle::after {
+      content: "";
+      position: absolute;
+      top: 3px;
+      left: 3px;
+      width: 20px;
+      height: 20px;
+      background: white;
+      border-radius: 999px;
+      transition: transform 0.2s;
+    }
+
+    .toggle.active::after { transform: translateX(22px); }
+
+    .split {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 1px;
+      background: var(--line);
+      min-height: calc(100vh - 180px);
+    }
+
+    .pane {
+      background: var(--bg);
+      padding: 1rem;
+      display: flex;
+      flex-direction: column;
+      gap: 0.9rem;
+    }
+
+    .pane-head {
+      display: flex;
+      align-items: center;
+      gap: 0.6rem;
+    }
+
+    .pane-head h2 {
+      font-size: 1.1rem;
+    }
+
+    .badge {
+      padding: 0.2rem 0.55rem;
+      border-radius: 999px;
+      font-size: 0.72rem;
+      font-weight: 700;
+      color: white;
+    }
+
+    .badge.bad { background: var(--bad); }
+    .badge.good { background: var(--good); }
+
+    .story {
+      color: var(--muted);
+      line-height: 1.5;
+      font-size: 0.9rem;
+      min-height: 2.7rem;
+    }
+
+    .stats {
+      display: grid;
+      grid-template-columns: repeat(4, minmax(0, 1fr));
+      gap: 0.7rem;
+    }
+
+    .stat {
+      border: 1px solid var(--line);
+      border-radius: 14px;
+      background: linear-gradient(180deg, var(--panel-2), var(--panel));
+      padding: 0.75rem;
+    }
+
+    .stat-label {
+      display: block;
+      color: var(--muted);
+      font-size: 0.76rem;
+      margin-bottom: 0.3rem;
+    }
+
+    .stat-value {
+      color: var(--text);
+      font-weight: 800;
+      font-variant-numeric: tabular-nums;
+      font-size: 1.05rem;
+    }
+
+    .fast { color: var(--good); }
+    .slow { color: var(--bad); }
+    .warn { color: var(--warn); }
+
+    .toolbar {
+      display: flex;
+      gap: 0.8rem;
+      align-items: center;
+      flex-wrap: wrap;
+    }
+
+    button {
+      border: 1px solid #315180;
+      border-radius: 12px;
+      padding: 0.8rem 1rem;
+      color: var(--text);
+      cursor: pointer;
+      font-weight: 700;
+      background: linear-gradient(180deg, #294777, #1a2d4f);
+    }
+
+    button:hover { filter: brightness(1.08); }
+
+    .hint {
+      color: var(--muted);
+      font-size: 0.84rem;
+    }
+
+    .status {
+      border: 1px solid var(--line);
+      border-radius: 14px;
+      background: linear-gradient(180deg, var(--panel-2), var(--panel));
+      padding: 0.9rem;
+      display: flex;
+      justify-content: space-between;
+      gap: 1rem;
+      align-items: center;
+    }
+
+    .status-copy {
+      display: flex;
+      flex-direction: column;
+      gap: 0.25rem;
+    }
+
+    .status-label {
+      color: var(--muted);
+      font-size: 0.8rem;
+    }
+
+    .status-text {
+      font-size: 1rem;
+      font-weight: 700;
+    }
+
+    .pulse {
+      width: 16px;
+      height: 16px;
+      border-radius: 999px;
+      background: #27456d;
+      box-shadow: 0 0 0 0 rgba(76, 201, 240, 0.35);
+    }
+
+    .pulse.live {
+      background: var(--accent);
+      animation: pulse 0.9s infinite;
+    }
+
+    @keyframes pulse {
+      0% { transform: scale(1); box-shadow: 0 0 0 0 rgba(76, 201, 240, 0.35); }
+      70% { transform: scale(1.08); box-shadow: 0 0 0 12px rgba(76, 201, 240, 0); }
+      100% { transform: scale(1); box-shadow: 0 0 0 0 rgba(76, 201, 240, 0); }
+    }
+
+    .progress {
+      height: 12px;
+      border-radius: 999px;
+      overflow: hidden;
+      border: 1px solid var(--line);
+      background: var(--panel);
+    }
+
+    .bar {
+      height: 100%;
+      width: 0%;
+      background: linear-gradient(90deg, #4cc9f0, #22c55e);
+      transition: width 0.08s linear;
+    }
+
+    .surface {
+      flex: 1;
+      min-height: 420px;
+      border: 1px solid var(--line);
+      border-radius: 18px;
+      background: linear-gradient(180deg, rgba(21, 36, 64, 0.85), rgba(13, 24, 43, 0.95));
+      overflow: auto;
+      padding: 0.9rem;
+    }
+
+    .grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(170px, 1fr));
+      gap: 0.75rem;
+    }
+
+    .card {
+      border: 1px solid #35507c;
+      border-radius: 14px;
+      background: linear-gradient(180deg, #203251, #18253d);
+      padding: 0.85rem;
+      min-height: 122px;
+    }
+
+    .card h3 {
+      font-size: 0.95rem;
+      margin-bottom: 0.45rem;
+      color: #eff6ff;
+    }
+
+    .meta {
+      font-size: 0.78rem;
+      line-height: 1.45;
+      color: #a8bee4;
+    }
+
+    .pill-row {
+      display: flex;
+      gap: 0.35rem;
+      flex-wrap: wrap;
+      margin-top: 0.55rem;
+    }
+
+    .pill {
+      background: #28426d;
+      color: #d9e7ff;
+      padding: 0.15rem 0.42rem;
+      border-radius: 999px;
+      font-size: 0.68rem;
+    }
+
+    .footer {
+      position: fixed;
+      left: 0;
+      right: 0;
+      bottom: 0;
+      display: flex;
+      justify-content: center;
+      gap: 2rem;
+      padding: 0.8rem 1rem;
+      border-top: 1px solid var(--line);
+      background: rgba(16, 27, 49, 0.96);
+      backdrop-filter: blur(8px);
+      color: var(--muted);
+      font-size: 0.85rem;
+    }
+
+    @media (max-width: 1000px) {
+      .split { grid-template-columns: 1fr; }
+      .stats { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+      .footer { position: static; }
+    }
+  </style>
+</head>
+<body>
+  <header class="header">
+    <h1>SnapINP Demo</h1>
+    <p>This demo shows the developer tradeoff that matters: not just total runtime, but how fast the UI acknowledges the interaction. Both sides build the same 4,000-card dashboard. The SnapINP side yields so the browser can paint status and progress sooner.</p>
+  </header>
+
+  <div class="controls">
+    <div class="toggle-wrap">
+      <div class="toggle active" id="snapToggle"></div>
+      <span>SnapINP enabled</span>
+    </div>
+  </div>
+
+  <main class="split">
+    <section class="pane">
+      <div class="pane-head">
+        <h2>Without SnapINP</h2>
+        <span class="badge bad">Blocking</span>
+      </div>
+      <p class="story">UI state is updated first, but the browser cannot paint it until the expensive rebuild finishes.</p>
+      <div class="stats">
+        <div class="stat"><span class="stat-label">First Feedback</span><span class="stat-value" id="feedbackOff">-</span></div>
+        <div class="stat"><span class="stat-label">Total Time</span><span class="stat-value" id="timeOff">-</span></div>
+        <div class="stat"><span class="stat-label">Progress Updates</span><span class="stat-value" id="updatesOff">0</span></div>
+        <div class="stat"><span class="stat-label">Cards</span><span class="stat-value" id="countOff">4,000</span></div>
+      </div>
+      <div class="toolbar">
+        <button id="runOff">Rebuild Dashboard</button>
+        <span class="hint">Click and watch how long it takes before the status actually appears.</span>
+      </div>
+      <div class="status">
+        <div class="status-copy">
+          <span class="status-label">Status</span>
+          <span class="status-text" id="statusOff">Idle</span>
+        </div>
+        <div class="pulse" id="pulseOff"></div>
+      </div>
+      <div class="progress"><div class="bar" id="barOff"></div></div>
+      <div class="surface"><div class="grid" id="gridOff"></div></div>
+    </section>
+
+    <section class="pane">
+      <div class="pane-head">
+        <h2>With SnapINP</h2>
+        <span class="badge good">Yielding</span>
+      </div>
+      <p class="story">UI state can paint immediately, then the dashboard rebuild continues in chunks with visible progress.</p>
+      <div class="stats">
+        <div class="stat"><span class="stat-label">First Feedback</span><span class="stat-value" id="feedbackOn">-</span></div>
+        <div class="stat"><span class="stat-label">Total Time</span><span class="stat-value" id="timeOn">-</span></div>
+        <div class="stat"><span class="stat-label">Progress Updates</span><span class="stat-value" id="updatesOn">0</span></div>
+        <div class="stat"><span class="stat-label">Cards</span><span class="stat-value" id="countOn">4,000</span></div>
+      </div>
+      <div class="toolbar">
+        <button id="runOn">Rebuild Dashboard</button>
+        <span class="hint">This side yields after acknowledging the click and between work chunks.</span>
+      </div>
+      <div class="status">
+        <div class="status-copy">
+          <span class="status-label">Status</span>
+          <span class="status-text" id="statusOn">Idle</span>
+        </div>
+        <div class="pulse" id="pulseOn"></div>
+      </div>
+      <div class="progress"><div class="bar" id="barOn"></div></div>
+      <div class="surface"><div class="grid" id="gridOn"></div></div>
+    </section>
+  </main>
+
+  <footer class="footer">
+    <span>INP (no SnapINP): <strong class="stat-value" id="inpOff">-</strong></span>
+    <span>INP (with SnapINP): <strong class="stat-value" id="inpOn">-</strong></span>
+  </footer>
+
+  <script src="../dist/index.global.js"></script>
+  <script>
+    const CARD_COUNT = 4000;
+    const CHUNK_SIZE = 250;
+    const DATA = Array.from({ length: CARD_COUNT }, (_, i) => ({
+      id: i + 1,
+      title: `Node ${i + 1}`,
+      owner: `Owner ${(i * 13) % 97}`,
+      score: (i * 17) % 1000,
+      state: i % 3 === 0 ? "active" : i % 3 === 1 ? "queued" : "paused",
+      region: ["us-east", "eu-west", "ap-south", "sa-north"][i % 4],
+    }));
+
+    function refs(side) {
+      return {
+        grid: document.getElementById(`grid${side}`),
+        status: document.getElementById(`status${side}`),
+        pulse: document.getElementById(`pulse${side}`),
+        bar: document.getElementById(`bar${side}`),
+        time: document.getElementById(`time${side}`),
+        feedback: document.getElementById(`feedback${side}`),
+        updates: document.getElementById(`updates${side}`),
+        count: document.getElementById(`count${side}`),
+      };
+    }
+
+    function busyWork(seed) {
+      let total = 0;
+      for (let i = 0; i < 180; i++) {
+        total += Math.sqrt((seed % 100) * i + 1);
+      }
+      return total;
+    }
+
+    function appendCards(grid, items, start, end) {
+      const fragment = document.createDocumentFragment();
+      for (let i = start; i < end; i++) {
+        const item = items[i];
+        const card = document.createElement("article");
+        card.className = "card";
+        card.innerHTML = `<h3>${item.title}</h3>
+          <div class="meta">Owner: ${item.owner}</div>
+          <div class="meta">Score: ${item.score}</div>
+          <div class="meta">Region: ${item.region}</div>
+          <div class="pill-row">
+            <span class="pill">${item.state}</span>
+            <span class="pill">zone-${item.id % 12}</span>
+            <span class="pill">batch-${item.id % 8}</span>
+          </div>`;
+        fragment.appendChild(card);
+      }
+      grid.appendChild(fragment);
+    }
+
+    function recordFeedback(view, start, label) {
+      requestAnimationFrame(() => {
+        const delay = performance.now() - start;
+        view.feedback.textContent = `${delay.toFixed(1)}ms`;
+        view.feedback.className = `stat-value ${delay > 120 ? "slow" : "fast"}`;
+        view.status.textContent = label;
+      });
+    }
+
+    function setProgress(view, done, total, updates) {
+      const percent = Math.round((done / total) * 100);
+      view.bar.style.width = `${percent}%`;
+      view.updates.textContent = String(updates);
+      view.status.textContent = `Rendering ${done.toLocaleString()} / ${total.toLocaleString()}`;
+    }
+
+    function finish(view, start, updates) {
+      const total = performance.now() - start;
+      view.time.textContent = `${total.toFixed(1)}ms`;
+      view.time.className = `stat-value ${total > 200 ? "warn" : "fast"}`;
+      view.updates.textContent = String(updates);
+      view.bar.style.width = "100%";
+      view.status.textContent = "Done";
+      view.pulse.classList.remove("live");
+    }
+
+    function prepare(view) {
+      view.grid.innerHTML = "";
+      view.count.textContent = CARD_COUNT.toLocaleString();
+      view.feedback.textContent = "-";
+      view.feedback.className = "stat-value";
+      view.time.textContent = "running...";
+      view.time.className = "stat-value";
+      view.updates.textContent = "0";
+      view.status.textContent = "Preparing UI...";
+      view.bar.style.width = "0%";
+      view.pulse.classList.add("live");
+    }
+
+    function renderBlocking() {
+      const view = refs("Off");
+      const start = performance.now();
+
+      prepare(view);
+      recordFeedback(view, start, "Dashboard ready");
+
+      for (let i = 0; i < DATA.length; i++) {
+        busyWork(i + 1);
+      }
+
+      appendCards(view.grid, DATA, 0, DATA.length);
+      finish(view, start, 1);
+    }
+
+    let runVersion = 0;
+
+    async function renderYielding() {
+      const view = refs("On");
+      const start = performance.now();
+      const thisVersion = ++runVersion;
+      let updates = 0;
+
+      prepare(view);
+      recordFeedback(view, start, "Starting rebuild...");
+      await SnapINP.yieldToMain();
+      if (thisVersion !== runVersion) return;
+
+      for (let i = 0; i < DATA.length; i += CHUNK_SIZE) {
+        const end = Math.min(i + CHUNK_SIZE, DATA.length);
+        for (let j = i; j < end; j++) {
+          busyWork(j + 1);
+        }
+        appendCards(view.grid, DATA, i, end);
+        updates++;
+        setProgress(view, end, DATA.length, updates);
+        await SnapINP.yieldToMain();
+        if (thisVersion !== runVersion) return;
+      }
+
+      finish(view, start, updates);
+    }
+
+    document.getElementById("runOff").addEventListener("click", () => {
+      renderBlocking();
+    });
+
+    document.getElementById("runOn").addEventListener("click", async () => {
+      await renderYielding();
+    });
+
+    const toggle = document.getElementById("snapToggle");
+    let snapDisposable = null;
+
+    function enableSnap() {
+      if (snapDisposable) return;
+      snapDisposable = SnapINP.snap({ debug: true });
+      toggle.classList.add("active");
+    }
+
+    function disableSnap() {
+      if (snapDisposable) {
+        snapDisposable.restore();
+        snapDisposable = null;
+      }
+      toggle.classList.remove("active");
+    }
+
+    toggle.addEventListener("click", () => {
+      if (snapDisposable) disableSnap();
+      else enableSnap();
+    });
+
+    enableSnap();
+
+    SnapINP.observe((metric) => {
+      document.getElementById("inpOn").textContent = `${metric.inp.toFixed(0)}ms`;
+    });
+
+    appendCards(refs("Off").grid, DATA, 0, 24);
+    appendCards(refs("On").grid, DATA, 0, 24);
+  </script>
+</body>
+</html>
