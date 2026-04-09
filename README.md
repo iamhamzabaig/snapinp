@@ -22,6 +22,8 @@ snap();
 
 That's it. Your app can acknowledge clicks, inputs, and heavy UI updates sooner under load.
 
+- npm package: [snapinp on npm](https://www.npmjs.com/package/snapinp)
+
 ## Demo
 
 Watch the package in action:

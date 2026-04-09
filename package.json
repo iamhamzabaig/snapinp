@@ -50,7 +50,11 @@
   "license": "MIT",
   "repository": {
     "type": "git",
-    "url": "https://github.com/user/snapinp.git"
+    "url": "https://github.com/iamhamzabaig/snapinp.git"
+  },
+  "homepage": "https://github.com/iamhamzabaig/snapinp#readme",
+  "bugs": {
+    "url": "https://github.com/iamhamzabaig/snapinp/issues"
   },
   "devDependencies": {
     "@changesets/cli": "2.27.10",
