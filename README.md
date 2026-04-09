@@ -22,6 +22,12 @@ snap();
 
 That's it. Your app can acknowledge clicks, inputs, and heavy UI updates sooner under load.
 
+## Demo
+
+Watch the package in action:
+
+- [Demo video (MP4)](./20260409-0734-41.8367767.mp4)
+
 ## Why Use It?
 
 - Show loading states and progress sooner during expensive interactions
@@ -31,7 +37,6 @@ That's it. Your app can acknowledge clicks, inputs, and heavy UI updates sooner 
 
 ## See It In Action
 
-- Demo video: [MP4 walkthrough](./20260409-0734-41.8367767.mp4)
 - Local demo:
 
 ```bash
