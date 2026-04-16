@@ -1,5 +1,9 @@
 # SnapINP
 
+<p align="center">
+  <img src="./branding/snapinp-logo.svg" alt="SnapINP logo" width="640" />
+</p>
+
 [![npm version](https://img.shields.io/npm/v/snapinp)](https://www.npmjs.com/package/snapinp)
 [![bundle size](https://img.shields.io/bundlephobia/minzip/snapinp)](https://bundlephobia.com/package/snapinp)
 [![TypeScript](https://img.shields.io/badge/TypeScript-strict-blue)](https://www.typescriptlang.org/)
