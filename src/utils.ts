@@ -116,7 +116,7 @@ export function validateOptions<T>(
 ): T {
   if (options === undefined || options === null) return {} as T;
   if (typeof options !== "object") {
-    throw new TypeError(`[SnapINP] Expected object, got${typeof options}`);
+    throw new TypeError(`[SnapINP] Expected object, got ${typeof options}`);
   }
 
   const opts = options as Record<string, unknown>;

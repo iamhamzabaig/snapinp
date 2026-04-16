@@ -1,4 +1,4 @@
-import type { INPMetric, INPReport, DebugFn } from "./types";
+import type { INPMetric, INPReport, DebugFn, Disposable } from "./types";
 import {
   createObserver,
   getCurrentINP,
@@ -14,6 +14,8 @@ interface ReporterState {
   baselineWindowEnd: number;
   beaconRegistered: boolean;
   beaconUrl: string | null;
+  metricObserver: Disposable | null;
+  metricCallback: ((m: INPMetric) => void) | null;
   debug: DebugFn;
 }
 
@@ -29,6 +31,8 @@ function getOrCreateReporterState(debug?: DebugFn): ReporterState {
     baselineWindowEnd: now() + BASELINE_WINDOW_MS,
     beaconRegistered: false,
     beaconUrl: null,
+    metricObserver: null,
+    metricCallback: null,
     debug: debug ?? createDebugger("reporter"),
   });
 }
@@ -138,7 +142,11 @@ export function createReport(options?: {
 
   // Register metric callback
   if (options?.onMetric !== undefined) {
-    createObserver(options.onMetric);
+    if (rs.metricCallback !== options.onMetric) {
+      rs.metricObserver?.disconnect?.();
+      rs.metricObserver = createObserver(options.onMetric);
+      rs.metricCallback = options.onMetric;
+    }
   }
 
   return Object.freeze({
@@ -167,7 +175,7 @@ function registerBeacon(rs: ReporterState): void {
             type: "application/json",
           });
           navigator.sendBeacon(rs.beaconUrl, blob);
-        } catch (_e: unknown) {
+        } catch {
           // Best-effort beacon, ignore failures
         }
       }
@@ -193,5 +201,6 @@ export function initReporter(debug?: DebugFn): void {
  * @internal
  */
 export function _resetReporterState(): void {
+  reporterState?.metricObserver?.disconnect?.();
   reporterState = null;
 }

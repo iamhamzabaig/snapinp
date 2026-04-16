@@ -19,6 +19,8 @@ const mapProto = { get: Map.prototype.get, set: Map.prototype.set, del: Map.prot
 
 /** Handler mapping: originalHandler → target → eventType → wrappedHandler */
 let handlerMap = new WeakMap<Function, WeakMap<EventTarget, Map<string, Function>>>();
+/** Stable binding cache for EventListenerObject.handleEvent */
+const listenerObjectMap = new WeakMap<EventListenerObject, Function>();
 
 /** Stored originals */
 let originalAddEventListener: typeof EventTarget.prototype.addEventListener | null = null;
@@ -102,7 +104,7 @@ function isExcluded(target: EventTarget): boolean {
   for (const selector of excludeSelectors) {
     try {
       if (target.matches(selector)) return true;
-    } catch (_e: unknown) {
+    } catch {
       // Invalid selector — skip
     }
   }
@@ -115,7 +117,11 @@ function extractHandler(
   if (listener === null) return null;
   if (typeof listener === "function") return listener;
   if (typeof listener === "object" && typeof listener.handleEvent === "function") {
-    return listener.handleEvent.bind(listener);
+    const cached = wmProto.get.call(listenerObjectMap, listener) as Function | undefined;
+    if (cached !== undefined) return cached;
+    const boundHandler = listener.handleEvent.bind(listener);
+    wmProto.set.call(listenerObjectMap, listener, boundHandler);
+    return boundHandler;
   }
   return null;
 }
@@ -286,7 +292,8 @@ export function installInterceptor(options?: SnapOptions): Disposable {
     const handler = typeof listener === "function"
       ? listener
       : typeof listener === "object" && listener !== null && typeof listener.handleEvent === "function"
-        ? listener.handleEvent
+        ? ((wmProto.get.call(listenerObjectMap, listener) as Function | undefined) ??
+          listener.handleEvent.bind(listener))
         : null;
 
     if (handler !== null) {

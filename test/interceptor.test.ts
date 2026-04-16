@@ -197,6 +197,22 @@ describe("interceptor", () => {
       disposable.restore();
     });
 
+    it("properly removes wrapped EventListenerObject handlers", () => {
+      const disposable = installInterceptor();
+      const handler = { handleEvent: vi.fn() };
+      const el = document.createElement("button");
+      document.body.appendChild(el);
+
+      el.addEventListener("click", handler);
+      el.removeEventListener("click", handler);
+      el.click();
+
+      expect(handler.handleEvent).not.toHaveBeenCalled();
+
+      document.body.removeChild(el);
+      disposable.restore();
+    });
+
     it("handles removing non-tracked handlers", () => {
       const disposable = installInterceptor();
       const handler = vi.fn();

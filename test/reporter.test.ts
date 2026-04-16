@@ -1,6 +1,7 @@
-import { describe, it, expect, beforeEach } from "vitest";
+import { describe, it, expect, beforeEach, vi } from "vitest";
 import { createReport, initReporter, _resetReporterState } from "../src/reporter";
 import { _resetObserverState } from "../src/observer";
+import * as observerModule from "../src/observer";
 
 describe("reporter", () => {
   beforeEach(() => {
@@ -34,6 +35,31 @@ describe("reporter", () => {
     it("has frozen histogram", () => {
       const report = createReport();
       expect(Object.isFrozen(report.histogram)).toBe(true);
+    });
+
+    it("registers onMetric observer only when callback changes", () => {
+      const disconnectOne = vi.fn();
+      const disconnectTwo = vi.fn();
+      const observerSpy = vi
+        .spyOn(observerModule, "createObserver")
+        .mockReturnValueOnce({
+          restore() {},
+          disconnect: disconnectOne,
+        })
+        .mockReturnValueOnce({
+          restore() {},
+          disconnect: disconnectTwo,
+        });
+
+      const first = vi.fn();
+      const second = vi.fn();
+      createReport({ onMetric: first });
+      createReport({ onMetric: first });
+      createReport({ onMetric: second });
+
+      expect(observerSpy).toHaveBeenCalledTimes(2);
+      expect(disconnectOne).toHaveBeenCalledTimes(1);
+      observerSpy.mockRestore();
     });
   });
 

@@ -64,7 +64,6 @@ export function wrapWithScheduler(
   yielder: () => Promise<void>,
   debug: DebugFn,
 ): Function {
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   function wrappedHandler(this: unknown, ...args: unknown[]): unknown {
     const start = now();
     let result: unknown;

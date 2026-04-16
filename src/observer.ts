@@ -5,6 +5,7 @@ import { createDebugger, generateSelector, isBrowserEnvironment, now } from "./u
 const MAX_INTERACTIONS = 200;
 
 interface InteractionGroup {
+  readonly interactionId: number;
   readonly id: string;
   duration: number;
   eventType: string;
@@ -55,19 +56,22 @@ function processEntry(
 
   if (existing !== undefined) {
     // Same interaction, multiple events — keep longest duration
-    if (entry.duration > existing.duration) {
-      existing.duration = entry.duration;
-      existing.eventType = entry.name;
-      existing.target = targetSelector;
-      existing.processingTime = processingTime;
-      existing.inputDelay = inputDelay;
-      existing.presentationDelay = presentationDelay;
-      existing.startTime = entry.startTime;
-    }
+    if (entry.duration <= existing.duration) return;
+    applyEntryToGroup(
+      existing,
+      entry,
+      targetSelector,
+      processingTime,
+      inputDelay,
+      presentationDelay,
+    );
+    s.interactions.sort((a, b) => b.duration - a.duration);
+    emitMetric(existing, s);
     return;
   }
 
   const group: InteractionGroup = {
+    interactionId,
     id: `${interactionId}-${entry.startTime.toFixed(0)}`,
     duration: entry.duration,
     eventType: entry.name,
@@ -78,25 +82,46 @@ function processEntry(
     startTime: entry.startTime,
   };
 
-  s.interactionMap.set(interactionId, group);
+  if (!trackInteraction(group, s)) return;
+  emitMetric(group, s);
+}
 
-  // Bounded insertion: keep sorted by duration descending
+function applyEntryToGroup(
+  group: InteractionGroup,
+  entry: PerformanceEventTiming,
+  targetSelector: string,
+  processingTime: number,
+  inputDelay: number,
+  presentationDelay: number,
+): void {
+  group.duration = entry.duration;
+  group.eventType = entry.name;
+  group.target = targetSelector;
+  group.processingTime = processingTime;
+  group.inputDelay = inputDelay;
+  group.presentationDelay = presentationDelay;
+  group.startTime = entry.startTime;
+}
+
+function trackInteraction(group: InteractionGroup, s: ObserverState): boolean {
   if (s.interactions.length < MAX_INTERACTIONS) {
     s.interactions.push(group);
-  } else {
-    // Replace the smallest (last) if this is larger
-    const last = s.interactions[s.interactions.length - 1];
-    if (last !== undefined && group.duration > last.duration) {
-      s.interactions[s.interactions.length - 1] = group;
-    } else {
-      return; // Not significant enough to track
-    }
+    s.interactionMap.set(group.interactionId, group);
+    s.interactions.sort((a, b) => b.duration - a.duration);
+    return true;
   }
 
-  // Sort descending by duration
-  s.interactions.sort((a, b) => b.duration - a.duration);
+  const last = s.interactions[s.interactions.length - 1];
+  if (last === undefined || group.duration <= last.duration) return false;
 
-  // Build metric
+  s.interactions[s.interactions.length - 1] = group;
+  s.interactionMap.delete(last.interactionId);
+  s.interactionMap.set(group.interactionId, group);
+  s.interactions.sort((a, b) => b.duration - a.duration);
+  return true;
+}
+
+function emitMetric(group: InteractionGroup, s: ObserverState): void {
   const metric: INPMetric = Object.freeze({
     inp: group.duration,
     eventType: group.eventType,
@@ -110,19 +135,16 @@ function processEntry(
 
   s.debug("metric", metric);
 
-  // Notify callbacks
   for (const cb of s.callbacks) {
     try {
       cb(metric);
     } catch (_e: unknown) {
-      // Internal error containment — don't let callback errors break observer
       if (typeof console !== "undefined") {
         console.error("[SnapINP internal error] Callback threw:", _e);
       }
     }
   }
 
-  // Feedback for adaptive mode
   if (s.feedbackFn !== null) {
     const rating = getRating(getCurrentINP(s));
     s.feedbackFn(group.eventType, rating);
