@@ -1,0 +1,39 @@
+<svg width="1600" height="480" viewBox="0 0 1600 480" fill="none" xmlns="http://www.w3.org/2000/svg" role="img" aria-labelledby="title desc">
+  <title id="title">SnapINP Logo</title>
+  <desc id="desc">SnapINP wordmark with a fast pulse icon representing instant UI response.</desc>
+
+  <defs>
+    <linearGradient id="badgeGradient" x1="60" y1="60" x2="420" y2="420" gradientUnits="userSpaceOnUse">
+      <stop offset="0" stop-color="#0B1426"/>
+      <stop offset="1" stop-color="#102B52"/>
+    </linearGradient>
+    <linearGradient id="pulseGradient" x1="112" y1="240" x2="384" y2="240" gradientUnits="userSpaceOnUse">
+      <stop offset="0" stop-color="#4CC9F0"/>
+      <stop offset="1" stop-color="#22C55E"/>
+    </linearGradient>
+  </defs>
+
+  <rect x="60" y="60" width="360" height="360" rx="92" fill="url(#badgeGradient)"/>
+  <rect x="74" y="74" width="332" height="332" rx="78" stroke="#28456D" stroke-width="2"/>
+
+  <path
+    d="M112 264H170L208 196L248 286L294 220H384"
+    stroke="url(#pulseGradient)"
+    stroke-width="26"
+    stroke-linecap="round"
+    stroke-linejoin="round"
+  />
+
+  <path d="M296 136L244 224H294L240 332L320 228H268L296 136Z" fill="#EAF6FF"/>
+
+  <text x="480" y="238" fill="#0F172A" font-size="140" font-weight="800" font-family="Space Grotesk, Segoe UI, Roboto, Helvetica, Arial, sans-serif" letter-spacing="-2">
+    Snap
+  </text>
+  <text x="832" y="238" fill="#0EA5E9" font-size="140" font-weight="800" font-family="Space Grotesk, Segoe UI, Roboto, Helvetica, Arial, sans-serif" letter-spacing="-2">
+    INP
+  </text>
+
+  <text x="486" y="320" fill="#475569" font-size="42" font-weight="600" font-family="Space Grotesk, Segoe UI, Roboto, Helvetica, Arial, sans-serif" letter-spacing="0.5">
+    One line. Instant UI. Every interaction.
+  </text>
+</svg>
